@@ -153,5 +153,27 @@ class ArchguardTest(unittest.TestCase):
         self.assertEqual([], r.check())  # placeholders warn, they do not fail
 
 
+    def test_a_multi_table_update_writes_every_table_assigned_in_set(self):
+        r = self.repo()
+        r.write("src/dispatch/persistence/TaskRepository.java", """
+        class TaskRepository {
+            public void handOver(long s) {
+                jdbc.update(\"\"\"
+                    UPDATE parcel p JOIN driver_task_item ti ON ti.parcel_id = p.id
+                    SET p.status = 'OUT', ti.item_status = 'OUT'
+                    WHERE ti.task_id = ?
+                    \"\"\", s);
+            }
+            public void ownOnly(long id) {
+                jdbc.update("UPDATE driver_task t JOIN parcel p ON p.id = t.id SET t.status = 'X' WHERE p.id = ?", id);
+            }
+        }
+        """)
+        errors = r.check()
+        self.assertEqual(1, len(errors), errors)   # parcel in handOver; driver_task_item is dispatch's own
+        self.assertIn("writes 'parcel'", errors[0])
+        self.assertIn("TaskRepository#handOver", errors[0])
+
+
 if __name__ == "__main__":
     unittest.main()

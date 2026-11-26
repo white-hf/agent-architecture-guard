@@ -25,7 +25,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 WRITE_RE = re.compile(
     r"(?<![A-Za-z_])(?P<kind>INSERT\s+(?:IGNORE\s+)?INTO|REPLACE\s+INTO|MERGE\s+INTO|UPDATE|DELETE\s+FROM)"
@@ -213,6 +213,35 @@ class Write:
         return (self.writer, self.location, self.table)
 
 
+UPDATE_TABLE_RE = re.compile(r"(?:UPDATE|JOIN)\s+[`\"\[]?(?P<table>[A-Za-z_][A-Za-z0-9_]*)[`\"\]]?(?:\s+(?:AS\s+)?(?P<alias>(?!SET\b|ON\b|JOIN\b|WHERE\b|LEFT\b|INNER\b|RIGHT\b)[A-Za-z_][A-Za-z0-9_]*))?", re.IGNORECASE)
+SET_ASSIGN_RE = re.compile(r"(?<![\w.])(?P<alias>[A-Za-z_][A-Za-z0-9_]*)\.[A-Za-z_][A-Za-z0-9_]*\s*=", re.IGNORECASE)
+
+
+def updated_tables(text: str, m: re.Match) -> list[str]:
+    """Tables an UPDATE writes. A multi-table UPDATE a JOIN b SET a.x=?, b.y=? writes every table assigned in SET;
+    an UPDATE without qualified assignments writes its first table."""
+    first = m.group("table").lower()
+    rest = text[m.start():m.start() + 4000]
+    set_at = re.search(r"\bSET\b", rest, re.IGNORECASE)
+    if not set_at:
+        return [first]
+    head, tail = rest[:set_at.start()], rest[set_at.end():]
+    end = re.search(r"\bWHERE\b|[\"'`]\s*[,)]|\"\"\"", tail)
+    assignments = tail[:end.start()] if end else tail
+    aliases: dict[str, str] = {}
+    for t in UPDATE_TABLE_RE.finditer(head):
+        table = t.group("table").lower()
+        aliases[table] = table
+        if t.group("alias"):
+            aliases[t.group("alias").lower()] = table
+    written = []
+    for a in SET_ASSIGN_RE.finditer(assignments):
+        table = aliases.get(a.group("alias").lower())
+        if table and table not in written:
+            written.append(table)
+    return written or [first]
+
+
 def scan_writes(cfg: Config, owners: dict[str, str]) -> tuple[list[Write], int]:
     """All writes in data-access code whose target table is owned by another domain, and the total write count."""
     found: list[Write] = []
@@ -229,15 +258,18 @@ def scan_writes(cfg: Config, owners: dict[str, str]) -> tuple[list[Write], int]:
         stem = p.stem
         index = function_index(text, p.suffix)
         for m in WRITE_RE.finditer(text):
-            table = m.group("table").lower()
             prefix = text[max(0, m.start() - 12):m.start()].upper()
-            if m.group("kind").upper() == "UPDATE" and re.search(r"KEY\s*$", prefix):
+            is_update = m.group("kind").upper() == "UPDATE"
+            if is_update and re.search(r"KEY\s*$", prefix):
                 continue  # ON DUPLICATE KEY UPDATE <column>
-            if table not in owners:
-                continue
-            total += 1
-            if owners[table] != writer:
-                found.append(Write(writer, f"{stem}#{enclosing_function(index, m.start())}", table, r))
+            targets = updated_tables(text, m) if is_update else [m.group("table").lower()]
+            location = f"{stem}#{enclosing_function(index, m.start())}"
+            for table in targets:
+                if table not in owners:
+                    continue
+                total += 1
+                if owners[table] != writer:
+                    found.append(Write(writer, location, table, r))
         for regex in ENTITY_TABLE_RES:
             for m in regex.finditer(text):
                 table = m.group("table").lower()

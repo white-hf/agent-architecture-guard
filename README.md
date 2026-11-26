@@ -63,7 +63,7 @@ Python 3.11+, standard library only. `check` fails when:
 
 Allowlist line: `writer domain | File#function | table | reason | iteration that removes it`.
 
-Limits: table names built at run time are not seen; domains come from file paths (`[[domains.rule]]`, first match wins, named group `domain`); comments are ignored; `ON DUPLICATE KEY UPDATE` is not a write.
+Multi-table `UPDATE a JOIN b SET a.x = ?, b.y = ?` writes every table assigned in `SET`. Limits: table names built at run time are not seen; domains come from file paths (`[[domains.rule]]`, first match wins, named group `domain`); comments are ignored; `ON DUPLICATE KEY UPDATE` is not a write.
 
 Tests (both guards): `python3 -m unittest discover -s guards/tests`.
 
