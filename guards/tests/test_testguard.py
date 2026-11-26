@@ -168,5 +168,26 @@ class TestguardTest(unittest.TestCase):
         self.assertEqual([], r.errors())
 
 
+    def test_skip_evidence_checks_citations_only(self):
+        r = self.repo()
+        r.write("src/test/PlanningTest.java", ALL_COVERED)
+        (r.root / "reports/TEST-a.xml").unlink()
+        self.assertTrue(any("no test reports" in e for e in r.errors()))
+        self.assertEqual([], testguard.check(r.cfg(), skip_evidence=True)[0])
+
+    def test_known_mismatches_show_in_the_matrix_and_need_a_decision(self):
+        r = self.repo()
+        r.write("src/test/PlanningTest.java", ALL_COVERED)
+        r.write("testing/known-mismatches.allowlist", "BR-P3 | capacity not enforced on reassign | fix in D1\nDEFECT-X | a bug | awaiting\n")
+        self.assertEqual([], r.errors())
+        text = testguard.matrix(r.cfg())
+        self.assertIn("covered, **known mismatch**", text)
+        self.assertIn("**2** known mismatch(es)", text)
+        r.write("testing/known-mismatches.allowlist", "BR-P3 | capacity not enforced\nBR-P8 | gone | x\n")
+        errors = r.errors()
+        self.assertTrue(any("needs what differs and the decision" in e for e in errors), errors)
+        self.assertTrue(any("BR-P8 is not a defined rule" in e for e in errors), errors)
+
+
 if __name__ == "__main__":
     unittest.main()

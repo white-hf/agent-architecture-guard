@@ -78,7 +78,9 @@ Run, at minimum:
   path that no longer exists;
 - `testguard matrix` — regenerate the matrix and commit it with the change.
 
-Never report "tests pass" from memory or from a partial run. Report the command, the count and the result, and
+When a test shows the code differs from a rule (or finds a defect), stop that item: pin only what matches, record
+the difference in the known-mismatch register with the evidence, and report it to the user — do not quietly change
+production behaviour or the rule. Never report "tests pass" from memory or from a partial run. Report the command, the count and the result, and
 point to CI where it exists. If a check fails, fix the test or the code; do not weaken the check, delete a test,
 or add an allowlist entry without the user's explicit approval.
 
