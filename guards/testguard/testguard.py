@@ -28,7 +28,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 SKIP_DIRS = {"node_modules", ".git", "target", "build", "dist", ".venv", "__pycache__"}
 DEFAULT_KINDS = ["happy", "boundary", "over", "invalid", "auth", "concurrency", "idempotency", "time", "failure"]
 MATRIX_MARKER = "<!-- testguard:matrix"
@@ -55,6 +55,7 @@ class Config:
     mismatch_file: Path
     junit_globs: list[str]
     min_tests: int
+    min_by_suite: dict[str, int]
     spec_files: list[str]
     matrix_file: Path
     path_prefixes: list[str] = field(default_factory=list)
@@ -86,6 +87,7 @@ def load_config(path: Path) -> Config:
         mismatch_file=root / rules.get("mismatches", "testing/known-mismatches.allowlist"),
         junit_globs=ev.get("junit", []),
         min_tests=ev.get("min_tests", 1),
+        min_by_suite=ev.get("min_by_suite", {}),
         spec_files=docs.get("spec", []),
         matrix_file=root / docs.get("matrix", "docs/testing/coverage-matrix.md"),
         path_prefixes=docs.get("path_prefixes", []),
@@ -168,6 +170,21 @@ def read_allowlist(path: Path) -> list[tuple[str, str, str, int]]:
         parts = [x.strip() for x in s.split("|")] + ["", ""]
         out.append((parts[0], parts[1], parts[2], i))
     return out
+
+
+def suite_runs(cfg: Config) -> dict[str, int]:
+    """Tests that actually ran (not skipped) per test suite name, from the JUnit reports."""
+    runs: dict[str, int] = {}
+    for g in cfg.junit_globs:
+        for p in sorted(cfg.root.glob(g)):
+            try:
+                root = ET.parse(p).getroot()
+            except ET.ParseError:
+                continue
+            for s in ([root] if root.tag == "testsuite" else root.iter("testsuite")):
+                name = s.get("name", "")
+                runs[name] = runs.get(name, 0) + int(s.get("tests", 0)) - int(s.get("skipped", 0))
+    return runs
 
 
 def evidence(cfg: Config) -> tuple[int, int, int, list[str]]:
@@ -264,6 +281,13 @@ def check(cfg: Config, skip_evidence: bool = False) -> tuple[list[str], list[str
             errors.append(f"evidence: only {total} tests ran (minimum {cfg.min_tests}); a test task may have silently run nothing")
         if failed:
             errors.append(f"evidence: {failed} test(s) failed or errored")
+        if files and cfg.min_by_suite:
+            runs = suite_runs(cfg)
+            for pattern, minimum in cfg.min_by_suite.items():
+                ran = sum(n for name, n in runs.items() if fnmatch.fnmatch(name, pattern))
+                if ran < minimum:
+                    errors.append(f"evidence: suites matching '{pattern}' ran {ran} tests (minimum {minimum}); "
+                                  f"were they skipped (e.g. no Docker for container tests)?")
         if total and skipped * 5 > total:
             warnings.append(f"evidence: {skipped} of {total} tests were skipped")
     errors += [f"spec: {s}" for s in stale_spec_paths(cfg)]

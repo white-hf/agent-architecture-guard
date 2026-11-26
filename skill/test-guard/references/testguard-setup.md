@@ -28,6 +28,8 @@ template = "BR-{1}{2}"
 [evidence]                                     # optional: JUnit XML written by the test run
 junit = ["**/target/surefire-reports/TEST-*.xml", "web/reports/junit.xml"]
 min_tests = 150                                # catches "the task ran nothing"
+[evidence.min_by_suite]                        # tests that must actually run (not skipped), per suite-name glob
+"*MySqlTest" = 40                              # e.g. container tests silently skipped without Docker
 
 [docs]
 spec = ["docs/testing/test-spec.md"]           # backticked paths in these files must exist

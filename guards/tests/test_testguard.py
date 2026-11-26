@@ -189,5 +189,16 @@ class TestguardTest(unittest.TestCase):
         self.assertTrue(any("BR-P8 is not a defined rule" in e for e in errors), errors)
 
 
+    def test_a_suite_family_that_was_skipped_fails_its_minimum(self):
+        r = self.repo()
+        r.write("src/test/PlanningTest.java", ALL_COVERED)
+        r.write("testguard.toml", CONFIG + '\n[evidence.min_by_suite]\n"*MySqlTest" = 2\n')
+        r.write("reports/TEST-a.xml", '<testsuite name="x.PlanningTest" tests="3" failures="0" errors="0" skipped="0"/>')
+        r.write("reports/TEST-b.xml", '<testsuite name="x.DayCloseMySqlTest" tests="5" failures="0" errors="0" skipped="5"/>')
+        self.assertTrue(any("'*MySqlTest' ran 0 tests" in e for e in r.errors()), r.errors())
+        r.write("reports/TEST-b.xml", '<testsuite name="x.DayCloseMySqlTest" tests="5" failures="0" errors="0" skipped="1"/>')
+        self.assertEqual([], r.errors())
+
+
 if __name__ == "__main__":
     unittest.main()
