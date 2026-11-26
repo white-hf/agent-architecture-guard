@@ -110,7 +110,7 @@ needs the user's approval.
 
 ## Failure patterns to check
 
-[references/failure-patterns.md](references/failure-patterns.md) lists the ways test suites fail in practice (tests
+[references/failure-patterns.md](references/failure-patterns.md) lists 16 ways test suites fail in practice (tests
 tied to one machine's data, constants baked from environment data, happy-path-only suites, unrun tests counted as
 passed, stale strategy documents, …) with the check that prevents each. Read it when generating a spec and when
 doing escape analysis; the generated spec must say how the project prevents every pattern that applies to it.

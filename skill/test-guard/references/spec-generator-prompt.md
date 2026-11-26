@@ -18,6 +18,10 @@ repository only; every claim must point to a file, a command you ran, or a test 
    that are never run automatically.
 3. **Map rules to tests.** Find existing citations (rule IDs in names, comments, tags). Configure `testguard`
    citation patterns to match the project's conventions. Run `testguard check` and `testguard matrix`.
+   Then go through every uncovered rule by hand and sort it into one of three groups: **tested but not cited**
+   (name the existing tests: the fix is adding the ID, not new tests), **partly tested** (name what is missing), or
+   **no test**. In the pilot project 14 of 25 "uncovered" rules were tested but not cited; skipping this step
+   overstates the gap and sends effort to the wrong place. Record the group in each allowlist reason.
 4. **Check the failure patterns** in `failure-patterns.md` one by one against this repository and record, for each,
    whether it applies and how the project prevents it today (or that it does not — that is a finding).
 5. **Choose required case kinds** per rule family using `case-design.md` (limits → boundary/over; permissions → auth;

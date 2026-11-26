@@ -32,7 +32,7 @@ and the CI job, and enable the hook.
 `skill/test-guard/` makes the agent derive tests from rules: load (or generate, for human review) the project's test
 spec → name the rules a change touches and the case kinds each needs → design data per case → prove it
 (`testguard check`, regenerated matrix) → report; plus an evolution loop run on every rule change, every escaped
-bug and on a schedule. `references/failure-patterns.md` lists 15 ways test suites fail in practice and the check
+bug and on a schedule. `references/failure-patterns.md` lists 16 ways test suites fail in practice and the check
 that prevents each; a generated spec must say how the project prevents every one that applies.
 
 ```sh

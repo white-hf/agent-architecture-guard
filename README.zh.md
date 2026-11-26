@@ -25,7 +25,7 @@
 
 ## test-guard 与 testguard
 
-`skill/test-guard/` 让 agent 从规则推导测试：读取（或生成后交人评审）项目的测试原则 → 列出改动涉及的规则及每条需要的情况类型 → 按情况设计数据 → 证明（`testguard check`，重新生成矩阵）→ 报告。另有演进循环，在规则变化、漏测缺陷和定时任务时运行。`references/failure-patterns.md` 列出测试套件在实践中的 15 种失败方式及对应的检查，生成的项目测试原则必须说明如何防范其中适用的每一种。
+`skill/test-guard/` 让 agent 从规则推导测试：读取（或生成后交人评审）项目的测试原则 → 列出改动涉及的规则及每条需要的情况类型 → 按情况设计数据 → 证明（`testguard check`，重新生成矩阵）→ 报告。另有演进循环，在规则变化、漏测缺陷和定时任务时运行。`references/failure-patterns.md` 列出测试套件在实践中的 16 种失败方式及对应的检查，生成的项目测试原则必须说明如何防范其中适用的每一种。
 
 命令与失败条件见 [README.md](README.md)。
 

@@ -21,6 +21,7 @@ an owner). Escape analysis (evolution loop) adds new patterns here or to the pro
 | F13 | **Shared mutable state between tests** | Tests sharing one database order-depend on each other and fail when run alone or in parallel | One database/context per test class or transaction rollback; unique keys per run; no reliance on execution order |
 | F14 | **Retry-until-green** | Flaky tests are re-run instead of fixed, hiding real races | Flakiness is a failure: find the cause (clock, ordering, shared data, async wait) |
 | F15 | **Mocks that prove nothing** | A test mocks the repository it is meant to test, or asserts the mock was called instead of the outcome | Mock only across process/network boundaries; assert observable outcomes (state, response, emitted event) |
+| F16 | **The test database is not the production database** | Persistence tests ran on H2 in MySQL mode; set-based `UPDATE … JOIN` and the conditional updates that guard concurrency behave differently and were only exercised end-to-end | Run persistence and concurrency tests on the production engine (a container in CI); keep in-memory databases for speed only where the SQL is portable |
 
 ## Escape analysis template
 
