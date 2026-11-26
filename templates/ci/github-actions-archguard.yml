@@ -1,0 +1,12 @@
+# Copy to .github/workflows/architecture.yml and add your build job next to it.
+name: architecture
+on: [pull_request, workflow_dispatch]
+jobs:
+  archguard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python3 tools/archguard/archguard.py check --config architecture/archguard.toml
+      - run: python3 tools/archguard/archguard.py measure --config architecture/archguard.toml

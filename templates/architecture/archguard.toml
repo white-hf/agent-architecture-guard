@@ -1,0 +1,29 @@
+# archguard configuration. Paths are relative to `root` (the directory of this file + root).
+root = ".."
+
+[sources]
+include = ["src/**/*.java", "src/**/*.kt", "src/**/*.ts", "src/**/*.py", "src/**/*.go"]
+exclude = ["**/test/**", "**/*.test.ts", "**/tests/**"]
+# Files whose path matches this regex are data-access code (writes are only looked for there).
+data_access_pattern = "/(persistence|repository|repositories|dao|db)/"
+
+# Domain of a file: the first matching rule wins; use a named group `domain` or a fixed `domain`.
+[[domains.rule]]
+pattern = "src/main/java/com/example/shared/"
+domain = "infra"
+[[domains.rule]]
+pattern = "com/example/(?P<domain>[a-z]+)/"
+
+[domains]
+aliases = {}                       # e.g. { planning = "dispatch" }
+known = ["order", "billing", "infra"]
+
+[schema]
+migrations = ["src/main/resources/db/migration/*.sql"]
+ownership = "architecture/table-ownership.properties"
+
+[writes]
+allowlist = "architecture/cross-domain-writes.allowlist"
+
+[measure]
+large_file_lines = 400
