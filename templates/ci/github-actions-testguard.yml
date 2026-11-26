@@ -1,0 +1,23 @@
+# Copy into .github/workflows/. `check` runs after the test job so it sees fresh JUnit reports;
+# the nightly `drift` report feeds the test-guard evolution loop.
+name: tests
+on:
+  pull_request:
+  schedule: [{ cron: "0 6 * * *" }]
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # - <your build/test steps, writing JUnit XML>
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: testguard check (rule coverage, evidence, spec paths)
+        run: python3 tools/testguard/testguard.py check --config testing/testguard.toml
+      - name: testguard drift (for the evolution loop)
+        if: always()
+        run: python3 tools/testguard/testguard.py drift --config testing/testguard.toml --json > testguard-drift.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: testguard-drift, path: testguard-drift.json }

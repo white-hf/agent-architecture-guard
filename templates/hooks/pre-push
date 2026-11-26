@@ -1,4 +1,7 @@
 #!/bin/sh
 # Runs the architecture guards before every push. Install: git config core.hooksPath tools/git-hooks
 root="$(git rev-parse --show-toplevel)"
-exec python3 "$root/tools/archguard/archguard.py" check --config "$root/architecture/archguard.toml"
+python3 "$root/tools/archguard/archguard.py" check --config "$root/architecture/archguard.toml" || exit 1
+if [ -f "$root/testing/testguard.toml" ]; then
+  python3 "$root/tools/testguard/testguard.py" check --config "$root/testing/testguard.toml" || exit 1
+fi

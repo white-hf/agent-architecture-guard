@@ -1,7 +1,13 @@
 # agent-architecture-guard
 
-Keep code written by coding agents (Claude Code, Codex, Cursor, …) and people inside a project's architecture.
-Three layers, usable together or alone ([中文](README.zh.md)):
+Keep code written by coding agents (Claude Code, Codex, Cursor, …) and people inside a project's architecture, and
+keep its tests traceable to its rules as both evolve. Two skills, each with a machine check ([中文](README.zh.md)):
+
+- **architecture-guard** + `archguard`: where code goes, who owns which data.
+- **test-guard** + `testguard`: which rules are tested with which cases, evidence that tests ran, and a loop that
+  keeps the project's test spec, coverage matrix and tests evolving with the code.
+
+Architecture layers, usable together or alone:
 
 | Layer | What | Works with |
 |---|---|---|
@@ -21,6 +27,26 @@ Then follow the printed steps: paste the AGENTS snippet, edit `architecture/arch
 (ownership file) and `archguard init --baseline` (allowlist today's violations, one reason each), add a layer-rule kit
 and the CI job, and enable the hook.
 
+## test-guard and testguard
+
+`skill/test-guard/` makes the agent derive tests from rules: load (or generate, for human review) the project's test
+spec → name the rules a change touches and the case kinds each needs → design data per case → prove it
+(`testguard check`, regenerated matrix) → report; plus an evolution loop run on every rule change, every escaped
+bug and on a schedule. `references/failure-patterns.md` lists 15 ways test suites fail in practice and the check
+that prevents each; a generated spec must say how the project prevents every one that applies.
+
+```sh
+python3 tools/testguard/testguard.py check  --config testing/testguard.toml   # exit 1 on any error
+python3 tools/testguard/testguard.py matrix --config testing/testguard.toml   # docs/testing/coverage-matrix.md
+python3 tools/testguard/testguard.py drift  --config testing/testguard.toml --json   # for the scheduled loop
+python3 tools/testguard/testguard.py init   --config testing/testguard.toml --baseline
+```
+
+`check` fails when a defined rule has no test citing it and is not allowlisted; an allowlist entry is covered or
+removed (the list only shrinks); a test cites a rule that no longer exists; a rule family lacks its required case
+kinds (`RULE-ID:boundary` tags); test reports (JUnit XML) are missing, show fewer tests than `min_tests`, or show
+failures; the test spec names a path that no longer exists. Setup: `skill/test-guard/references/testguard-setup.md`.
+
 ## archguard
 
 ```sh
@@ -39,8 +65,8 @@ Allowlist line: `writer domain | File#function | table | reason | iteration that
 
 Limits: table names built at run time are not seen; domains come from file paths (`[[domains.rule]]`, first match wins, named group `domain`); comments are ignored; `ON DUPLICATE KEY UPDATE` is not a write.
 
-Tests: `python3 -m unittest discover -s guards/tests`.
+Tests (both guards): `python3 -m unittest discover -s guards/tests`.
 
 ## Versioning
 
-Projects pin a copy of `archguard.py` (`tools/archguard/`, plus a `VERSION` file) so a guard update never breaks a build unannounced. Update with `FORCE=1 ./install.sh`.
+Projects pin copies of `archguard.py` and `testguard.py` (`tools/<guard>/`, each with a `VERSION` file) so a guard update never breaks a build unannounced. Update with `FORCE=1 ./install.sh`.

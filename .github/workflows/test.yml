@@ -14,3 +14,4 @@ jobs:
         run: |
           d=$(mktemp -d) && git -C "$d" init -q && ./install.sh "$d"
           test -f "$d/tools/archguard/archguard.py" && test -f "$d/.claude/skills/architecture-guard/SKILL.md"
+          test -f "$d/tools/testguard/testguard.py" && test -f "$d/.claude/skills/test-guard/SKILL.md"
