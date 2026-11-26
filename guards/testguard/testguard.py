@@ -28,7 +28,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 SKIP_DIRS = {"node_modules", ".git", "target", "build", "dist", ".venv", "__pycache__"}
 DEFAULT_KINDS = ["happy", "boundary", "over", "invalid", "auth", "concurrency", "idempotency", "time", "failure"]
 MATRIX_MARKER = "<!-- testguard:matrix"
@@ -298,7 +298,7 @@ def drift(cfg: Config) -> dict:
     if cfg.matrix_file.exists():
         for line in cfg.matrix_file.read_text(encoding="utf-8").splitlines():
             m = re.match(r"\|\s*(\S+)\s*\|.*\|\s*([^|]+?)\s*\|\s*$", line)
-            if m and m.group(1) not in {"Rule", "---"}:
+            if m and m.group(1) != "Rule" and not m.group(1).startswith("-"):
                 old_rules.add(m.group(1))
                 if m.group(2) == "covered":
                     old_covered.add(m.group(1))

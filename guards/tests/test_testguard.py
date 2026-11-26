@@ -149,7 +149,9 @@ class TestguardTest(unittest.TestCase):
         self.assertIn("boundary", text)
         cfg.matrix_file.parent.mkdir(parents=True, exist_ok=True)
         cfg.matrix_file.write_text(text)
-        self.assertFalse(testguard.drift(cfg)["matrix_outdated"])
+        unchanged = testguard.drift(cfg)
+        self.assertFalse(unchanged["matrix_outdated"])
+        self.assertEqual([], unchanged["removed_rules"])  # the |---| separator row is not a rule
         r.write("docs/rules.md", RULES + "| BR-D4 | A failed parcel is retried once | H09 |\n")
         r.write("src/test/PlanningTest.java", "void brP3_x() {} void brG5_y() {}")
         d = testguard.drift(r.cfg())
